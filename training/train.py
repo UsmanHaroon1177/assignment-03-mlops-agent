@@ -34,6 +34,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "dataset.csv"
 DEFAULT_EXPERIMENT = "breast-cancer-classifier"
 REGISTERED_MODEL = "breast-cancer-clf"
+# skops must be told to trust the sklearn tree type to save tree models.
+# Safe here: we train and save these models ourselves.
+SKOPS_TRUSTED = ["sklearn.tree._tree.Tree"]
 
 
 def parse_args(argv=None):
@@ -136,6 +139,7 @@ def main(argv=None) -> int:
             model,
             name="model",
             registered_model_name=REGISTERED_MODEL if a.register else None,
+            skops_trusted_types=SKOPS_TRUSTED,
         )
         run_id = run.info.run_id
 
