@@ -19,3 +19,4 @@ kubernetes>=29,<40
 # Tests / lint
 pytest>=8,<10
 ruff>=0.5
+pyyaml>=6,<7
