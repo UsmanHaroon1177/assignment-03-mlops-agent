@@ -17,7 +17,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 
 ## Phases
 - [x] 0  Scaffold, git init, .gitignore, PROGRESS.md, first push
-- [ ] 1  Environment: venv, deps, .wslconfig, Docker + Kubernetes check
+- [x] 1  Environment: venv, deps, .wslconfig, Docker + Kubernetes check
 - [ ] 2  Dataset + DVC + train.py + MLflow logging (DVC version + git commit on each run)
 - [ ] 3  mlflow_tools.py + dvc_tools.py
 - [ ] 4  Airflow 3 container + 5-stage DAG + airflow_tools.py
@@ -29,10 +29,11 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
-Phase 0 done once the first push succeeds. Next: Phase 1.
+Phase 0 and 1 done. Next: Phase 2.
 
 ## Notes / bugs / lessons
 (none yet)
 
 ## If starting a new chat
 Paste this whole file and say which phase you are on.
+
