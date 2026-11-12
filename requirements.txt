@@ -1,0 +1,21 @@
+# Agent / API
+fastapi>=0.110,<1
+uvicorn>=0.29,<1
+pydantic>=2.6,<3
+python-dotenv>=1.0,<2
+requests>=2.31,<3
+httpx>=0.27,<1
+
+# LLM
+google-genai>=1.20.0,<3.0
+
+# MLOps tooling
+mlflow>=2.16,<4
+dvc>=3.50,<4
+scikit-learn>=1.4,<2
+pandas>=2.1,<3
+kubernetes>=29,<40
+
+# Tests / lint
+pytest>=8,<10
+ruff>=0.5
