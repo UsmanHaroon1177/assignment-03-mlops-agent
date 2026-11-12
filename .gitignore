@@ -1,0 +1,46 @@
+# secrets and local config
+.env
+*.pem
+*.key
+kubeconfig*
+*.kubeconfig
+simple_auth_manager_passwords.json.generated
+
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# generated run output and logs
+out/
+reports/
+traces/
+logs/
+*.trace.jsonl
+
+# local ML tracking (re-creatable)
+mlruns/
+mlartifacts/
+mlflow.db
+
+# airflow local state
+airflow/data/
+airflow/logs/
+airflow.db
+
+# dvc local cache (the .dvc files and dvc.lock ARE committed)
+.dvc/cache
+.dvc/tmp
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
