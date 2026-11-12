@@ -19,7 +19,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 0  Scaffold, git init, .gitignore, PROGRESS.md, first push
 - [x] 1  Environment: venv, deps, .wslconfig, Docker + Kubernetes check
 - [x] 2  Dataset + DVC + train.py + MLflow logging (DVC version + git commit on each run)
-- [ ] 3  mlflow_tools.py + dvc_tools.py
+- [x] 3  mlflow_tools.py + dvc_tools.py
 - [ ] 4  Airflow 3 container + 5-stage DAG + airflow_tools.py
 - [ ] 5  FastAPI inference service + Dockerfile + manifests + kubernetes_tools.py
 - [ ] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
@@ -29,7 +29,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
-Phases 0-2 done. Next: Phase 3.
+Phases 0-3 done. Next: Phase 4 (Airflow).
 
 ## Notes / bugs / lessons
 (none yet)
@@ -61,3 +61,23 @@ Paste this whole file and say which phase you are on.
 - MLflow 3.18 saves sklearn models with skops; tree models need skops_trusted_types=["sklearn.tree._tree.Tree"].
   The two failed runs had already logged metrics, so MLflow tools must only consider status=FINISHED runs
   (add a regression test in Phase 8). scripts/delete_failed_runs.py cleans them up.
+
+
+## Phase 3 interfaces (code that exists now)
+- agent/schemas.py: ToolResult(tool, status in ok|error|unavailable|rejected, data, error, duration_ms, request_id).
+  Only status=ok carries facts. Anything else => the agent must say the information is unknown.
+- agent/tools/base.py: ToolSpec(name, description, params, fn, mutating=False); ToolInputError (-> rejected),
+  ToolUnavailableError (-> unavailable); execute(tool, fn, request_id, **kwargs) never raises, validates
+  arguments, redacts output, logs JSON (tool, status, duration_ms, request_id, arg NAMES only).
+- agent/safety.py: redact(text), redact_obj(obj) - for TOOL output only, never the model's prose.
+- agent/logging_utils.py: configure(), new_request_id(), log_tool_call().
+- Each tool module exposes TOOLS: list[ToolSpec]. Names are prefixed (mlflow_*, dvc_*).
+- MLflow tools: list_experiments, list_runs, get_run_details, find_best_run (FINISHED only, returns caveats,
+  is_deployment_decision=false), compare_runs, compare_experiments, get_model_registry. resolve_run accepts
+  run id, 8+ char prefix or run name. MLflow calls use a 10 s timeout and 1 retry.
+- DVC tools: list_tracked_datasets, get_dataset_version, check_data_changes, compare_dataset_versions,
+  get_run_dataset_version (MLflow tags verified against git), explain_reproduce_version (read-only).
+  Commands: no shell, allowlist git {log,show,tag,rev-parse,ls-files,status}, dvc {status,diff}.
+- Tests: 36 offline tests (mocked MLflow client, temp git repo). scripts/try_tools.py = real-service smoke test.
+- scripts/start_mlflow.ps1 starts the tracking server.
+- Restart routine: start Docker Desktop, run .\scripts\start_mlflow.ps1, then python scripts\check_env.py.
