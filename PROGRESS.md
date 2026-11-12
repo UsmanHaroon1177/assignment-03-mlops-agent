@@ -56,3 +56,8 @@ Paste this whole file and say which phase you are on.
   must be skipped when env DVC_ROOT is set). Airflow container must reach MLflow via host.docker.internal
   (MLflow 3 may need --allowed-hosts).
 - Docker memory: needed .wslconfig (memory=4GB, swap=2GB); verify with docker info before Phase 4.
+
+### Bug log
+- MLflow 3.18 saves sklearn models with skops; tree models need skops_trusted_types=["sklearn.tree._tree.Tree"].
+  The two failed runs had already logged metrics, so MLflow tools must only consider status=FINISHED runs
+  (add a regression test in Phase 8). scripts/delete_failed_runs.py cleans them up.
