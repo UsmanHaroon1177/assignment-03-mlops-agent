@@ -22,14 +22,14 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 3  mlflow_tools.py + dvc_tools.py
 - [x] 4  Airflow 3 container + 5-stage DAG + airflow_tools.py
 - [x] 5  FastAPI inference service + Dockerfile + manifests + kubernetes_tools.py
-- [ ] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
+- [x] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
 - [ ] 7  Multi-tool scenario (no automatic retraining)
 - [ ] 8  pytest suite (8+ tests) + GitHub Actions CI
 - [ ] 9  Two injected failures, 5 demo scenarios, screenshots
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
-Phases 0-5 done. Next: Phase 6 (agent core: schemas, llm, safety, validation, orchestrator, fake LLM).
+Phases 0-6 done. Next: Phase 7 (multi-tool scenario hints + FastAPI agent endpoint agent/main.py, no automatic retraining).
 
 ## Notes / bugs / lessons
 (none yet)
@@ -120,3 +120,20 @@ Paste this whole file and say which phase you are on.
 - Injected failures available for Phase 9: wrong MODEL_PATH in the ConfigMap (pods Running 0/1, readiness 503), bad image
   tag (ImagePullBackOff), tiny memory limit (OOMKilled), scale to 0.
 - Smoke: python -m scripts.try_k8s (read-only). Screenshots: k8s_deployed.png, api_via_k8s.png, k8s_tools_smoke.png.
+
+## Phase 6 interfaces (code that exists now)
+- agent/schemas.py: ToolResult plus ToolCall, Fact(claim, evidence[tool names]), LLMAction (action tools|final, calls,
+  summary, known_facts, uncertainties, recommended_actions), PendingAction, AgentResponse(answer, known_facts,
+  uncertainties, recommended_actions, tool_results, pending_actions, llm_error, request_id).
+- agent/llm.py: GeminiLLM (REST via requests, key only in x-goog-api-key header, env GEMINI_API_KEY, model env
+  GEMINI_MODEL default gemini-2.5-flash, retries 429/5xx twice), LLMError, list_models(). agent/fake_llm.py: FakeLLM(script).
+- agent/validation.py: parse_action (fence-tolerant JSON), check_call (unknown tool/arg -> ToolInputError, strips
+  model-supplied `confirmed`), check_question (<=2000 chars). agent/registry.py: load_tools() -> {name: ToolSpec}.
+  agent/prompts.py: build_system_prompt(tools).
+- agent/orchestrator.py: Orchestrator(llm, tools=None, max_steps=6).run(question, request_id) -> AgentResponse.
+  Evidence gate: a known fact is kept only if ALL cited tools returned status ok; otherwise it moves to uncertainties
+  ("withheld"); every non-ok tool adds an uncertainty. Mutating tools never run from model output: they become
+  PendingAction; orchestrator.confirm(id) (user-initiated, one-shot, 10 min TTL) sets confirmed=True itself;
+  reject(id); pending(). Dedupes identical calls; caps 6 calls/step, 12 total; truncates tool data to 5000 chars for the model.
+- scripts/ask.py: python -m scripts.ask [--list-models] [--verbose] "question" (real Gemini + real tools, asks yes/no for pending).
+- Tests: tests/test_agent_core.py (FakeLLM, no network).
