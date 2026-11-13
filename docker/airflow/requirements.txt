@@ -1,0 +1,8 @@
+dvc==3.67.1
+joblib==1.6.0
+mlflow==3.18.0
+numpy==2.5.4
+pandas==2.3.3
+scikit-learn==1.9.1
+scipy==1.18.1
+skops==0.16.0

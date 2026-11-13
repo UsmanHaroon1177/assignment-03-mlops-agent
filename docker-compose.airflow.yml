@@ -1,0 +1,39 @@
+name: mlops-airflow
+services:
+  airflow:
+    build: ./docker/airflow
+    image: mlops-airflow:local
+    container_name: mlops-airflow
+    command: standalone
+    env_file: .env.airflow
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    mem_limit: 2560m
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/passwords.json
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/state/airflow.db
+      AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/state/logs
+      AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "15"
+      MLFLOW_TRACKING_URI: http://host.docker.internal:5000
+      PROJECT_DIR: /opt/airflow/project
+      PIPELINE_WORK_DIR: /opt/airflow/state/work
+      PYTHONPATH: /opt/airflow/project
+      DVC_NO_ANALYTICS: "1"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - .:/opt/airflow/project
+      - ./airflow/passwords.json:/opt/airflow/passwords.json
+      - airflow-state:/opt/airflow/state
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+volumes:
+  airflow-state:
