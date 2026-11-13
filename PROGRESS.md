@@ -24,15 +24,24 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 5  FastAPI inference service + Dockerfile + manifests + kubernetes_tools.py
 - [x] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
 - [x] 7  Multi-tool scenario (no automatic retraining)
-- [ ] 8  pytest suite (8+ tests) + GitHub Actions CI
+- [x] 8  pytest suite (8+ tests) + GitHub Actions CI
 - [ ] 9  Two injected failures, 5 demo scenarios, screenshots
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
-Phases 0-7 done. Next: Phase 8 (pytest suite review/coverage + GitHub Actions CI + declare deps incl. kubernetes, httpx).
+Phases 0-8 done. Next: Phase 9 (two injected failures, 5 demo scenarios, screenshots).
 
 ## Notes / bugs / lessons
-(none yet)
+- Gemini sometimes returns objects ({"claim": ...}) in uncertainties/recommended_actions: schemas._text_of coerces them.
+- The model wrote conclusions in `summary` for tools it never called (e.g. "no data changes" without dvc_check_data_changes).
+  The evidence gate only checks known_facts, so the summary is now labelled "model-written, not evidence-checked" and the
+  prompt forbids unqueried conclusions. Report as a known limitation.
+- A failed latest Airflow run with no task inspection now adds an uncertainty (policy.evidence_gaps).
+- Fake mutating tools in tests must declare the same params as the real tool, or check_call rejects the arguments.
+- Record the model that answered (ask.py prints "answered by") for every demo in REPORT.md; -latest aliases can change.
+- Ruff: line-length 140, select E,F,I,B, B008 allows fastapi.Depends/Path/Header, E501 ignored in tests/.
+  Rewriting pyproject.toml with a regex broke it once; edit it whole.
+- Coverage (agent/): 88% total; uncovered lines are mostly the raw cluster/HTTP wrappers that tests mock on purpose.
 
 ## If starting a new chat
 Paste this whole file and say which phase you are on.
@@ -151,3 +160,11 @@ Paste this whole file and say which phase you are on.
 - Known gap (document in REPORT): the guard filters recommended_actions only, not free text in the summary; Kubernetes
   tools cannot prove which MLflow run the deployed image was built from.
 - Tests: tests/test_scenarios.py, tests/test_agent_api.py (need httpx).
+
+## Phase 8 interfaces (code that exists now)
+- LLM config in .env (gitignored): GEMINI_API_KEY, GEMINI_MODEL=gemini-flash-latest, GEMINI_FALLBACK_MODELS=gemini-flash-lite-latest.
+- agent/policy.py also has evidence_gaps(results); orchestrator._apply_policy adds its notes to uncertainties.
+- agent/schemas.py _text_of(): dict -> claim/text/description/message/recommendation text, else JSON.
+- Rendered answers start with "Summary (model-written; only the facts below are checked against tool evidence):".
+- tests/test_agent_hardening.py. CI: .github/workflows/ci.yml (ruff check + pytest --cov=agent, Python 3.12, no secrets,
+  all external services mocked). Dependencies in requirements.txt (kubernetes, httpx, requests, pydantic, pytest, pytest-cov, ruff).
