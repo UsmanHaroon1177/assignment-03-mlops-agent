@@ -54,7 +54,7 @@ def git_dirty() -> bool:
     return code == 0 and bool(out)
 
 
-def dvc_status() -> str:
+def _dvc_status_impl() -> str:
     """'up-to-date' if the data file matches the .dvc record, 'modified' if not."""
     code, out = _run([sys.executable, "-m", "dvc", "status", DVC_FILE, "--json"], timeout=120)
     if code != 0:
@@ -75,3 +75,11 @@ def collect() -> dict:
         "code.git_dirty": str(git_dirty()).lower(),
     }
     return {"tags": tags}
+
+def dvc_status() -> str:
+    """DVC refuses nested dvc calls inside `dvc repro` stages (it sets DVC_ROOT); skip there."""
+    import os as _os
+
+    if _os.environ.get("DVC_ROOT"):
+        return "unknown"
+    return _dvc_status_impl()
