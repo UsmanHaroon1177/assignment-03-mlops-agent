@@ -1,0 +1,8 @@
+# Reproducible training stage. The dataset itself is tracked by data/dataset.csv.dvc.
+stages:
+  train:
+    cmd: python -m training.train --model logreg --run-name dvc-repro-logreg
+    deps:
+      - data/dataset.csv
+      - training/train.py
+      - training/provenance.py
