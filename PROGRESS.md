@@ -23,13 +23,13 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 4  Airflow 3 container + 5-stage DAG + airflow_tools.py
 - [x] 5  FastAPI inference service + Dockerfile + manifests + kubernetes_tools.py
 - [x] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
-- [ ] 7  Multi-tool scenario (no automatic retraining)
+- [x] 7  Multi-tool scenario (no automatic retraining)
 - [ ] 8  pytest suite (8+ tests) + GitHub Actions CI
 - [ ] 9  Two injected failures, 5 demo scenarios, screenshots
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
-Phases 0-6 done. Next: Phase 7 (multi-tool scenario hints + FastAPI agent endpoint agent/main.py, no automatic retraining).
+Phases 0-7 done. Next: Phase 8 (pytest suite review/coverage + GitHub Actions CI + declare deps incl. kubernetes, httpx).
 
 ## Notes / bugs / lessons
 (none yet)
@@ -137,3 +137,17 @@ Paste this whole file and say which phase you are on.
   reject(id); pending(). Dedupes identical calls; caps 6 calls/step, 12 total; truncates tool data to 5000 chars for the model.
 - scripts/ask.py: python -m scripts.ask [--list-models] [--verbose] "question" (real Gemini + real tools, asks yes/no for pending).
 - Tests: tests/test_agent_core.py (FakeLLM, no network).
+
+## Phase 7 interfaces (code that exists now)
+- agent/prompts.py: SCENARIOS (playbooks A-D + correlation + retraining rules), included in the system prompt.
+  Test asserts every tool name in SCENARIOS exists in load_tools().
+- agent/policy.py: guard_retraining(recs, question, results) -> (kept, notes). Retrain recommendations survive only with
+  evidence: airflow_get_failed_tasks / airflow_get_run_status (status ok) showing quality_gate failed, or a user statement
+  with a freshness/degradation keyword AND a number. Negated mentions ("no retraining needed") are kept. Withheld ones become
+  uncertainties. Orchestrator._apply_policy runs after _finalize and re-renders the answer.
+- agent/main.py: uvicorn agent.main:app --port 8002. POST /ask, GET /pending, POST /confirm/{id}, POST /reject/{id},
+  GET /tools, GET /health. Optional env AGENT_API_TOKEN -> header X-Agent-Token required on all but /health.
+  .env is loaded in the app lifespan (not at import), so tests never read the real key.
+- Known gap (document in REPORT): the guard filters recommended_actions only, not free text in the summary; Kubernetes
+  tools cannot prove which MLflow run the deployed image was built from.
+- Tests: tests/test_scenarios.py, tests/test_agent_api.py (need httpx).
