@@ -21,7 +21,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 2  Dataset + DVC + train.py + MLflow logging (DVC version + git commit on each run)
 - [x] 3  mlflow_tools.py + dvc_tools.py
 - [x] 4  Airflow 3 container + 5-stage DAG + airflow_tools.py
-- [ ] 5  FastAPI inference service + Dockerfile + manifests + kubernetes_tools.py
+- [x] 5  FastAPI inference service + Dockerfile + manifests + kubernetes_tools.py
 - [ ] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
 - [ ] 7  Multi-tool scenario (no automatic retraining)
 - [ ] 8  pytest suite (8+ tests) + GitHub Actions CI
@@ -29,7 +29,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
-Phases 0-4 done. Next: Phase 5 (FastAPI service + Dockerfile + K8s manifests + kubernetes_tools.py).
+Phases 0-5 done. Next: Phase 6 (agent core: schemas, llm, safety, validation, orchestrator, fake LLM).
 
 ## Notes / bugs / lessons
 (none yet)
@@ -101,3 +101,22 @@ Paste this whole file and say which phase you are on.
 - Smoke scripts: scripts\airflow_smoke.ps1 [-Model rf -MinF1 0.999], scripts\try_airflow.py [--trigger].
 - Screenshots: screenshots/airflow_dag_success.png, airflow_gate_failed.png, dvc_reproduce.png.
 - Phase 6 must require explicit confirmation before executing any ToolSpec with mutating=True.
+
+## Phase 5 interfaces (code that exists now)
+- Inference service: api/main.py (GET /healthz liveness, /readyz readiness 503 until model loaded, /version, POST /predict
+  with 30 features). Config from env (ConfigMap): APP_VERSION, MODEL_PATH, LOG_LEVEL. Model baked into the image:
+  scripts/export_model.py writes serving/model/{model.joblib (gitignored), metadata.json} and serving/requirements.txt.
+- Image breast-cancer-api:1.0.0 (non-root UID 10001). Manifests in kubernetes/: namespace mlops-agent, configmap
+  breast-cancer-api-config, deployment breast-cancer-api (2 replicas, probes, requests/limits, label app=breast-cancer-api,
+  app.kubernetes.io/version), ClusterIP service breast-cancer-api (port 80 -> 8000).
+  Access: kubectl -n mlops-agent port-forward svc/breast-cancer-api 8001:80; python scripts\try_api.py.
+- agent/tools/kubernetes_tools.py (names k8s_*): list_deployments, list_pods, get_pod_status(pod_name), get_pod_logs(pod_name,
+  tail_lines<=200, previous), list_services, find_unhealthy_pods (reasons + deployment issues + warning events + all_clear),
+  get_events, get_deployed_version (declared label/image tag/ConfigMap + mismatches; does not query the app),
+  rollout_restart (mutating=True; namespace/deployment/confirmed). Scope fixed to namespace mlops-agent, app=breast-cancer-api.
+- rollout_restart REJECTS unless confirmed is exactly True. Phase 6 orchestrator MUST set confirmed=True itself after explicit
+  user approval and strip any model-supplied `confirmed` from arguments (also applies to airflow_trigger_training approval).
+- Cluster calls go through raw functions (_list_pods, _read_logs, ...) returning dicts; tests monkeypatch those.
+- Injected failures available for Phase 9: wrong MODEL_PATH in the ConfigMap (pods Running 0/1, readiness 503), bad image
+  tag (ImagePullBackOff), tiny memory limit (OOMKilled), scale to 0.
+- Smoke: python -m scripts.try_k8s (read-only). Screenshots: k8s_deployed.png, api_via_k8s.png, k8s_tools_smoke.png.
