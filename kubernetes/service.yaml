@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: breast-cancer-api
+  namespace: mlops-agent
+  labels:
+    app: breast-cancer-api
+spec:
+  type: ClusterIP
+  selector:
+    app: breast-cancer-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
