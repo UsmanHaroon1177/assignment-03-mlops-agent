@@ -168,3 +168,10 @@ Paste this whole file and say which phase you are on.
 - Rendered answers start with "Summary (model-written; only the facts below are checked against tool evidence):".
 - tests/test_agent_hardening.py. CI: .github/workflows/ci.yml (ruff check + pytest --cov=agent, Python 3.12, no secrets,
   all external services mocked). Dependencies in requirements.txt (kubernetes, httpx, requests, pydantic, pytest, pytest-cov, ruff).
+
+## Phase 8 interfaces (code that exists now)
+- .env (gitignored): GEMINI_API_KEY, GEMINI_MODEL=gemini-flash-latest, GEMINI_FALLBACK_MODELS=gemini-flash-lite-latest.
+- agent/policy.py: evidence_gaps(results); orchestrator._apply_policy adds its notes to uncertainties.
+- agent/schemas.py _text_of(): dict -> claim/text/description/message/recommendation text, else JSON.
+- Answers start with "Summary (model-written; only the facts below are checked against tool evidence):".
+- CI: .github/workflows/ci.yml (ruff check + pytest --cov=agent, Python 3.12, no secrets, services mocked). Green.
