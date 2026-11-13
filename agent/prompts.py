@@ -66,4 +66,8 @@ CORRELATION RULES:
 - RETRAINING: recommend it only when a tool result shows a failed quality gate, or the user supplied a freshness policy or
   degradation figures. Otherwise say plainly that the evidence does not justify retraining, and say what evidence would.
   Never request airflow_trigger_training unless the user explicitly asks to start training.
+- The summary may only restate known_facts. Do not state a conclusion about anything you did not query
+  (for example, do not say data is unchanged unless dvc_check_data_changes returned ok).
+- If the latest Airflow run failed, call airflow_get_failed_tasks before judging whether retraining is needed.
+- uncertainties and recommended_actions must be arrays of plain strings, not objects.
 """

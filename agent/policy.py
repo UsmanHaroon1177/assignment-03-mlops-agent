@@ -51,3 +51,16 @@ def guard_retraining(recommendations: list[str], question: str, results: list[To
         else:
             kept.append(rec)
     return kept, notes
+
+def evidence_gaps(results: list[ToolResult]) -> list[str]:
+    """Deterministic notes about things the answer cannot know from the tools that were called."""
+    ok = {r.tool for r in results if r.status == "ok"}
+    inspected = {"airflow_get_failed_tasks", "airflow_get_run_status"} & ok
+    notes: list[str] = []
+    for r in results:
+        if r.tool == "airflow_list_dag_runs" and r.status == "ok" and r.data and not inspected:
+            runs = r.data.get("runs") or []
+            if runs and runs[0].get("state") == "failed":
+                notes.append("The latest Airflow run is in state 'failed' but its tasks were not inspected, so the "
+                             "cause (quality gate, data, or infrastructure) is unknown.")
+    return notes

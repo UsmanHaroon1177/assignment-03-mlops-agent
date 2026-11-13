@@ -1,6 +1,7 @@
 """Shared data models for the MLOps agent."""
 from __future__ import annotations
 
+import json
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -21,6 +22,18 @@ class ToolResult(BaseModel):
     error: str | None = None
     duration_ms: int = 0
     request_id: str = "-"
+
+
+def _text_of(x: Any) -> str:
+    """Models sometimes return {"claim": "..."} where a plain string is required."""
+    if isinstance(x, str):
+        return x
+    if isinstance(x, dict):
+        for key in ("claim", "text", "description", "message", "recommendation"):
+            if isinstance(x.get(key), str):
+                return x[key]
+        return json.dumps(x, default=str)
+    return str(x)
 
 
 class ToolCall(BaseModel):
@@ -67,7 +80,7 @@ class LLMAction(BaseModel):
     @field_validator("uncertainties", "recommended_actions", mode="before")
     @classmethod
     def _strings(cls, v: Any) -> Any:
-        return [] if v is None else [x if isinstance(x, str) else str(x) for x in v]
+        return [] if v is None else [_text_of(x) for x in v]
 
     @model_validator(mode="after")
     def _tools_need_calls(self) -> "LLMAction":
