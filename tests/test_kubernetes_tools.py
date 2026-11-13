@@ -2,7 +2,7 @@ import pytest
 from kubernetes.client.exceptions import ApiException
 
 from agent.tools import kubernetes_tools as k8s
-from agent.tools.base import ToolUnavailableError, execute
+from agent.tools.base import execute
 
 TOOL = {t.name: t for t in k8s.TOOLS}
 APP = {"app": "breast-cancer-api"}
