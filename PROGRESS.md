@@ -20,7 +20,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 1  Environment: venv, deps, .wslconfig, Docker + Kubernetes check
 - [x] 2  Dataset + DVC + train.py + MLflow logging (DVC version + git commit on each run)
 - [x] 3  mlflow_tools.py + dvc_tools.py
-- [ ] 4  Airflow 3 container + 5-stage DAG + airflow_tools.py
+- [x] 4  Airflow 3 container + 5-stage DAG + airflow_tools.py
 - [ ] 5  FastAPI inference service + Dockerfile + manifests + kubernetes_tools.py
 - [ ] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
 - [ ] 7  Multi-tool scenario (no automatic retraining)
@@ -29,7 +29,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
-Phases 0-3 done. Next: Phase 4 (Airflow).
+Phases 0-4 done. Next: Phase 5 (FastAPI service + Dockerfile + K8s manifests + kubernetes_tools.py).
 
 ## Notes / bugs / lessons
 (none yet)
@@ -81,3 +81,23 @@ Paste this whole file and say which phase you are on.
 - Tests: 36 offline tests (mocked MLflow client, temp git repo). scripts/try_tools.py = real-service smoke test.
 - scripts/start_mlflow.ps1 starts the tracking server.
 - Restart routine: start Docker Desktop, run .\scripts\start_mlflow.ps1, then python scripts\check_env.py.
+
+## Phase 4 interfaces (code that exists now)
+- Startup: .\scripts\dev_up.ps1 (checks + starts MLflow), .\scripts\dev_up.ps1 -Airflow (also the container).
+  One-time: .\scripts\airflow_setup.ps1 (creates gitignored .env.airflow + airflow\passwords.json).
+- Airflow: docker-compose.airflow.yml, container mlops-airflow, UI/API http://localhost:8080 (API under /api/v2,
+  JWT from POST /auth/token). Container reaches MLflow at http://host.docker.internal:5000
+  (start_mlflow.ps1 binds 0.0.0.0 with --allowed-hosts). Project is mounted at /opt/airflow/project.
+- DAG training_pipeline (schedule=None): validate_dataset(no retry) -> preprocess_data -> train_model(2 retries)
+  -> evaluate_and_log(2 retries) -> quality_gate(no retry). Params: model (logreg|rf|gbm), min_f1 (default 0.90).
+  Gate failure raises AirflowFailException and tags the MLflow run quality_gate=failed; nothing is promoted.
+  Runs are named airflow-<model>-<run_id> and tagged airflow.dag_id / airflow.dag_run_id.
+- agent/tools/airflow_tools.py (names airflow_*): list_dags, list_dag_runs, get_run_status, get_failed_tasks,
+  get_task_logs, trigger_training (mutating=True; only model + min_f1). All fixed to training_pipeline.
+  Credentials from env AIRFLOW_USERNAME/AIRFLOW_PASSWORD (fallback .env.airflow); base URL env AIRFLOW_BASE_URL.
+  HTTP 400/404/409/422 -> rejected; connection/timeout/401/403/5xx -> unavailable.
+- dvc.yaml has a `train` stage (dvc repro logs run dvc-repro-logreg). Inside dvc repro, DVC_ROOT is set and
+  training/provenance.dvc_status() returns "unknown" (DVC refuses nested dvc calls).
+- Smoke scripts: scripts\airflow_smoke.ps1 [-Model rf -MinF1 0.999], scripts\try_airflow.py [--trigger].
+- Screenshots: screenshots/airflow_dag_success.png, airflow_gate_failed.png, dvc_reproduce.png.
+- Phase 6 must require explicit confirmation before executing any ToolSpec with mutating=True.
