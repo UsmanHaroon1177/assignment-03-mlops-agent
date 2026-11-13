@@ -35,10 +35,35 @@ SAFETY RULES:
 
 
 def build_system_prompt(tools: dict[str, ToolSpec]) -> str:
-    lines = [RULES, "TOOLS:"]
+    lines = [RULES, SCENARIOS, "TOOLS:"]
     for spec in sorted(tools.values(), key=lambda s: s.name):
         flag = " [MUTATING]" if spec.mutating else ""
         shown = {k: v for k, v in spec.params.items() if k != "confirmed"}
         params = "; ".join(f"{k}: {v}" for k, v in shown.items()) or "no arguments"
         lines.append(f"- {spec.name}{flag}: {spec.description} | args: {params}")
     return "\n".join(lines)
+
+SCENARIOS = """SCENARIO PLAYBOOKS (use only the steps the question needs; put independent calls in one step):
+A) "Find the best recent model, identify its dataset version, check deployment, explain whether retraining is necessary":
+   step 1 (together): mlflow_find_best_run, mlflow_list_runs, k8s_list_deployments, k8s_find_unhealthy_pods,
+          k8s_get_deployed_version, airflow_list_dag_runs, airflow_get_run_status
+   step 2: dvc_get_run_dataset_version for the run id returned by mlflow_find_best_run; add dvc_check_data_changes
+          or dvc_get_dataset_version when asked whether newer data exists
+   step 3: if the latest Airflow run failed, airflow_get_failed_tasks to read the diagnostics
+   step 4: correlate and write the final answer.
+B) Deployment diagnosis ("why is my API unavailable?"): k8s_find_unhealthy_pods, k8s_list_deployments, k8s_list_services,
+   then k8s_get_pod_status and k8s_get_pod_logs (use previous=true for crashed containers) for each unhealthy pod,
+   and k8s_get_events. Name the layer at fault (image, config, probe, resources, scheduling) and the evidence.
+C) Pipeline questions: airflow_list_dag_runs, airflow_get_run_status, airflow_get_failed_tasks, airflow_get_task_logs.
+   If a quality gate failed, report the threshold from the run conf next to the recorded metrics.
+D) Dataset provenance: dvc_get_run_dataset_version, dvc_compare_dataset_versions, dvc_explain_reproduce_version.
+
+CORRELATION RULES:
+- The Kubernetes tools report the DECLARED version (label, image tag, ConfigMap). Nothing links the deployed image to a
+  specific MLflow run unless a tool result says so; state that link as an uncertainty, never as a fact.
+- Keep facts and judgements apart: put recorded values under known_facts, gaps and caveats under uncertainties,
+  suggestions under recommended_actions.
+- RETRAINING: recommend it only when a tool result shows a failed quality gate, or the user supplied a freshness policy or
+  degradation figures. Otherwise say plainly that the evidence does not justify retraining, and say what evidence would.
+  Never request airflow_trigger_training unless the user explicitly asks to start training.
+"""

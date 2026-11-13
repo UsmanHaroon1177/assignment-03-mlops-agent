@@ -17,6 +17,7 @@ from typing import Callable
 from agent.llm import LLM, LLMError
 from agent.logging_utils import LOGGER_NAME, log_tool_call, new_request_id
 from agent.prompts import build_system_prompt
+from agent.policy import guard_retraining
 from agent.registry import load_tools
 from agent.safety import redact
 from agent.schemas import AgentResponse, Fact, LLMAction, PendingAction, ToolCall, ToolResult
@@ -82,9 +83,19 @@ class Orchestrator:
             _event("agent_llm_error", request_id=rid, error=llm_error)
 
         response = self._finalize(final, results, pending, rid, llm_error)
+        response = self._apply_policy(response, question)
         _event("agent_response", request_id=rid, tool_calls=len(results), pending=len(pending),
                facts=len(response.known_facts), llm_ok=llm_error is None and final is not None)
         return response
+
+    def _apply_policy(self, resp: AgentResponse, question: str) -> AgentResponse:
+        recs, notes = guard_retraining(resp.recommended_actions, question, resp.tool_results)
+        if not notes:
+            return resp
+        _event("retraining_recommendation_withheld", request_id=resp.request_id, count=len(notes))
+        unc = resp.uncertainties + notes
+        answer = self._render(resp.summary, resp.known_facts, unc, recs, resp.pending_actions)
+        return resp.model_copy(update={"recommended_actions": recs, "uncertainties": unc, "answer": answer})
 
     def confirm(self, pending_id: str, request_id: str | None = None) -> ToolResult:
         """Execute a pending mutating action after the USER approved it. The model cannot call this."""
