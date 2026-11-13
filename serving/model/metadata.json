@@ -1,0 +1,14 @@
+{
+  "model_name": "breast-cancer-clf",
+  "model_type": "RandomForestClassifier",
+  "dataset_version": "v2",
+  "dataset_dvc_md5": "65b6898435bfa3da03404fd7e40eb91d",
+  "code_git_commit": "6b7c9bf",
+  "n_rows": 569,
+  "n_features": 30,
+  "target_column": "target",
+  "holdout_f1": 0.9315,
+  "sklearn_version": "1.9.1",
+  "exported_at": "2026-11-13T16:58:09+00:00",
+  "exported_by": "scripts/export_model.py (retrained locally; not an MLflow artifact)"
+}

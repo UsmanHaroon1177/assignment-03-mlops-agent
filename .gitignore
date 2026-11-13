@@ -48,3 +48,5 @@ Thumbs.db
 # Airflow local secrets/state
 .env.airflow
 airflow/passwords.json
+
+serving/model/model.joblib
