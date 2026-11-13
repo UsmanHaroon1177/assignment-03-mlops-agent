@@ -13,10 +13,10 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
 
 from agent.tools.base import ToolInputError, ToolSpec, ToolUnavailableError
+from kubernetes import client, config
 
 NAMESPACE = "mlops-agent"
 APP_LABEL = "breast-cancer-api"
@@ -375,7 +375,9 @@ def rollout_restart(namespace: Any = NAMESPACE, deployment: Any = DEPLOYMENT, co
 
 
 TOOLS: list[ToolSpec] = [
-    ToolSpec("k8s_list_deployments", "Deployments of the ML app: desired/ready/available replicas, image, version label, conditions.", {}, list_deployments),
+    ToolSpec("k8s_list_deployments",
+             "Deployments of the ML app: desired/ready/available replicas, image, version label, conditions.",
+             {}, list_deployments),
     ToolSpec("k8s_list_pods", "Pods of the ML app: phase, ready count, restarts, node, age, container states.", {}, list_pods),
     ToolSpec("k8s_get_pod_status", "Detailed status of one app pod: problems, conditions, probes, resources and its warning events.",
              {"pod_name": "name of an app pod (from k8s_list_pods)"}, get_pod_status),
@@ -383,10 +385,14 @@ TOOLS: list[ToolSpec] = [
              {"pod_name": "name of an app pod", "tail_lines": "optional int 1-200, default 50",
               "previous": "optional bool: logs of the previous (crashed) container, default false"}, get_pod_logs),
     ToolSpec("k8s_list_services", "Services of the ML app: type, cluster IP, ports, selector and ready endpoint count.", {}, list_services),
-    ToolSpec("k8s_find_unhealthy_pods", "Health check: unhealthy pods with reasons (restarts, OOMKilled, crash loops, not ready), deployment issues and warning events.", {}, find_unhealthy_pods),
+    ToolSpec("k8s_find_unhealthy_pods",
+             "Health check: unhealthy pods with reasons (restarts, OOMKilled, crash loops, not ready), deployment issues, warning events.",
+             {}, find_unhealthy_pods),
     ToolSpec("k8s_get_events", "Recent events for the ML app objects.",
              {"only_warnings": "optional bool, default true", "limit": "optional int 1-50, default 20"}, get_events),
-    ToolSpec("k8s_get_deployed_version", "Deployed application version from Deployment label, image tag and ConfigMap, with mismatches.", {}, get_deployed_version),
+    ToolSpec("k8s_get_deployed_version",
+             "Deployed application version from Deployment label, image tag and ConfigMap, with mismatches.",
+             {}, get_deployed_version),
     ToolSpec("k8s_rollout_restart", "Restart the app deployment (needs explicit user confirmation; approved namespace only).",
              {"namespace": "optional; must be mlops-agent", "deployment": "optional; must be breast-cancer-api",
               "confirmed": "set only by the system after the user approves; never guess"},
