@@ -50,3 +50,5 @@ Thumbs.db
 airflow/passwords.json
 
 serving/model/model.joblib
+
+serving/model/model.joblib
