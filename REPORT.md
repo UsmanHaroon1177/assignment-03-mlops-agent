@@ -42,7 +42,8 @@ Safety controls enforced in code:
 
 - **DVC:** reproduction of the training stage and dataset checkout.
   ![dvc repro](screenshots/dvc_reproduce.png)
-- **MLflow:** six seeded runs (v1/v2 x logreg/rf/gbm), two registered models. **[fill in: add an MLflow UI screenshot, e.g. screenshots/mlflow_runs.png]**
+- **MLflow:** six seeded runs (v1/v2 x logreg/rf/gbm), two registered models. 
+  ![MLflow runs](screenshots/mlflow_runs.png)
 - **Airflow:** successful run, a quality-gate failure, and a successful run after the MLflow host fix.
   ![Airflow success](screenshots/airflow_dag_success.png)
   ![Quality gate failed](screenshots/airflow_gate_failed.png)
@@ -105,7 +106,7 @@ pipeline and withheld its own retraining suggestion. This demonstrates the "no i
 
 ## 6. Testing and CI
 
-Offline pytest suite (mocked MLflow, Airflow, Kubernetes and Gemini; scripted `FakeLLM`), about 120 tests, coverage of `agent/` about 88%.
+Offline pytest suite (mocked MLflow, Airflow, Kubernetes and Gemini; scripted `FakeLLM`), 126 tests, coverage of `agent/` 88%.
 Requirements covered: tool selection and execution, unavailable services, timeouts, invalid requests, no invented results when a tool is unavailable, unauthorized Kubernetes changes rejected, structured logs with request IDs and no secrets, FINISHED-only MLflow runs.
 GitHub Actions runs `ruff check` and `pytest --cov` on pull requests and pushes to main; no secrets are used.
 
