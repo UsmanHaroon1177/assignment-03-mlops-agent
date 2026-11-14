@@ -25,7 +25,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 6  Agent core: schemas, llm, safety, validation, orchestrator, fake LLM
 - [x] 7  Multi-tool scenario (no automatic retraining)
 - [x] 8  pytest suite (8+ tests) + GitHub Actions CI
-- [ ] 9  Two injected failures, 5 demo scenarios, screenshots
+- [x] 9  Two injected failures, 5 demo scenarios, screenshots
 - [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
@@ -175,3 +175,15 @@ Paste this whole file and say which phase you are on.
 - agent/schemas.py _text_of(): dict -> claim/text/description/message/recommendation text, else JSON.
 - Answers start with "Summary (model-written; only the facts below are checked against tool evidence):".
 - CI: .github/workflows/ci.yml (ruff check + pytest --cov=agent, Python 3.12, no secrets, services mocked). Green.
+
+## Phase 9 evidence (files that exist now)
+- scripts/inject_failure.ps1 -Mode badpath|oom|restore (operator only). evidence/failure1_badpath.txt (names missing.joblib /
+  MODEL_PATH), evidence/failure2_oom.txt (OOMKilled exit 137, 24Mi limit, restarts). Screenshots failure1_*, failure2_*.
+- scripts/run_demos.py [1..5] writes evidence/demoN_*.txt (answer, model name, request id, tool evidence).
+  demo5_multi_tool_airflow_outage.txt = real Airflow outage handled as uncertainty, retrain suggestion withheld.
+- Unexpected failure for defence: Airflow train_model failed 3x because MLflow answered 403 "Invalid Host header" to
+  host.docker.internal (server started without --allowed-hosts). Fixed by restarting via start_mlflow.ps1. The DAG
+  then took 11 min (container I/O bound, 1.9/2.5 GB) but succeeded. The agent saw only "failed at train_model"
+  because stderr sits in the exception, past the log tail.
+- Lessons: a shell GEMINI_MODEL overrides .env; Gemini free-tier latency makes one answer take about 2 min; demo prompt
+  needs refs data-v1/data-v2 (not v1/v2).
