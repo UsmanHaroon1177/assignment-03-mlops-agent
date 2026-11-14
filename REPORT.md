@@ -98,7 +98,7 @@ pipeline and withheld its own retraining suggestion. This demonstrates the "no i
 - **Root cause:** running the training command inside the container showed MLflow returning `403 Invalid Host header - possible DNS rebinding attack detected` for `host.docker.internal`. The MLflow server had been started without `--allowed-hosts`.
 - **Resolution:** restart MLflow with `scripts/start_mlflow.ps1` (binds 0.0.0.0, allows `host.docker.internal`). The next run succeeded.
 - **Follow-up:** the run then took 11 minutes. The container sat at about 1.9 of 2.5 GB with high block I/O and low CPU: git/dvc provenance calls and artifact writes on a Windows-mounted volume are slow.
-- **Gap found:** the Airflow log tool only returned the head of the task log, so the stderr in the exception was past the tail. Improvement listed below.
+- **Gap found:** the Airflow log tool only returned the head of the task log, so the stderr in the exception was past the tail. Fixed afterwards: `airflow_get_failed_tasks` now includes the exception type and message from `error_detail`, so the agent can see the MLflow 403 itself.
 ![success after fix](screenshots/airflow_run_success_after_fix.png)
 
 ### Failure 4 (process): CI caught an incomplete push
@@ -122,7 +122,6 @@ Limitations:
 - Probe warnings from past events can appear in a healthy deployment's answer.
 
 Proposed improvements:
-- Return the stderr tail of failed Airflow tasks from `airflow_get_failed_tasks`.
 - Query the running app's `/version` endpoint and record the MLflow run id as an image label to close the provenance gap.
 - Filter events by recency so old startup warnings are ignored.
 - Evidence-check or regenerate the summary from the verified facts.
