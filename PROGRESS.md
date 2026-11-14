@@ -26,7 +26,7 @@ Machine: Windows + PowerShell, 8 GB RAM, Docker Desktop with built-in Kubernetes
 - [x] 7  Multi-tool scenario (no automatic retraining)
 - [x] 8  pytest suite (8+ tests) + GitHub Actions CI
 - [x] 9  Two injected failures, 5 demo scenarios, screenshots
-- [ ] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
+- [x] 10 README, architecture.md, REPORT.md, fresh-clone test, secret scan
 
 ## Current status
 Phases 0-8 done. Next: Phase 9 (two injected failures, 5 demo scenarios, screenshots).
