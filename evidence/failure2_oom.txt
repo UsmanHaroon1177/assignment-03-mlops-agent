@@ -1,0 +1,28 @@
+﻿models (in order): ['gemini-flash-latest', 'gemini-3.5-flash-lite']
+
+Summary (model-written; only the facts below are checked against tool evidence):
+The prediction API is unstable due to container OOMKilled (exit 137) errors causing CrashLoopBackOff states and failing readiness probes (connection refused / 503 errors). Specifically, pod breast-cancer-api-5c56889bd9-bhgk9 has restarted 5 times because its memory limit is set to 24Mi (with a request of 16Mi), which is insufficient for the container to run successfully.
+
+Known facts (backed by tool results):
+- Unhealthy pods include breast-cancer-api-5c56889bd9-bhgk9 and breast-cancer-api-5c56889bd9-cd42s, both experiencing CrashLoopBackOff and OOMKilled (exit 137) terminations with multiple restarts.  [k8s_find_unhealthy_pods, k8s_get_pod_status]
+- Deployment breast-cancer-api has image breast-cancer-api:1.0.0 with 1/2 replicas ready.  [k8s_list_deployments]
+- Pod breast-cancer-api-5c56889bd9-bhgk9 has a memory limit of 24Mi and a memory request of 16Mi.  [k8s_get_pod_status]
+- Events show multiple BackOff and Readiness probe failed warnings with connection refused or HTTP 503 status codes.  [k8s_get_events, k8s_find_unhealthy_pods]
+
+Uncertainties / unknown:
+- The exact memory consumption profile of the application code causing the OOMKilled termination.
+- Whether adjusting the resource limits to a higher value will fully resolve all downstream readiness probe issues without other bottlenecks.
+
+Recommended actions:
+- Increase the memory limits and requests for the breast-cancer-api deployment to accommodate the application's memory footprint.
+- Monitor pod stability and readiness probes after updating the resource configuration.
+
+answered by: gemini-3.5-flash-lite
+
+-- tool evidence --
+k8s_find_unhealthy_pods             ok           918 ms
+k8s_list_deployments                ok           6 ms
+k8s_list_services                   ok           38 ms
+k8s_get_events                      ok           27 ms
+k8s_get_pod_status                  ok           31 ms
+k8s_get_pod_logs                    ok           57 ms

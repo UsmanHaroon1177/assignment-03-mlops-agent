@@ -1,0 +1,27 @@
+﻿models (in order): ['gemini-flash-latest', 'gemini-3.5-flash-lite']
+
+Summary (model-written; only the facts below are checked against tool evidence):
+The prediction API is unavailable (only 1/2 replicas ready, service has 1 ready endpoint out of 3 total) because the application fails to load the model artifact, resulting in readiness probe failures (HTTP 503). Specifically, container logs show a FileNotFoundError when trying to load from /app/serving/model/missing.joblib.
+
+Known facts (backed by tool results):
+- Deployment breast-cancer-api has only 1/2 replicas ready.  [k8s_list_deployments, k8s_find_unhealthy_pods]
+- Unhealthy pods (such as breast-cancer-api-fccc94bf-7hhj6 and breast-cancer-api-fccc94bf-9k9d9) are running with 0/1 ready status due to readiness probe failures returning HTTP status code 503.  [k8s_find_unhealthy_pods, k8s_get_pod_status, k8s_get_events]
+- Pod logs show a FileNotFoundError when trying to load the model: 'FileNotFoundError: [Errno 2] No such file or directory: '/app/serving/model/missing.joblib''.  [k8s_get_pod_logs]
+
+Uncertainties / unknown:
+- The exact configuration map or environment variable setting causing the app to look for missing.joblib was not explicitly inspected.
+- No explicit link between the deployed image and a specific MLflow run ID is provided by the Kubernetes deployment metadata.
+
+Recommended actions:
+- Verify and update the deployment's configuration (ConfigMap/Environment variables) to point to a valid, existing model path instead of '/app/serving/model/missing.joblib'.
+- Ensure that the required model artifact is correctly mounted or packaged within the container image.
+
+answered by: gemini-3.5-flash-lite
+
+-- tool evidence --
+k8s_find_unhealthy_pods             ok           1698 ms
+k8s_list_deployments                ok           4 ms
+k8s_list_services                   ok           46 ms
+k8s_get_pod_status                  ok           32 ms
+k8s_get_pod_logs                    ok           80 ms
+k8s_get_events                      ok           17 ms
