@@ -58,6 +58,7 @@ B) Deployment diagnosis ("why is my API unavailable?"). Read error_lines in the 
 C) Pipeline questions: airflow_list_dag_runs, airflow_get_run_status, airflow_get_failed_tasks, airflow_get_task_logs.
    If a quality gate failed, report the threshold from the run conf next to the recorded metrics.
 D) Dataset provenance: dvc_get_run_dataset_version, dvc_compare_dataset_versions, dvc_explain_reproduce_version.
+   Dataset git refs are the tags data-v1 and data-v2 (never v1/v2); dataset.version v1 means ref data-v1.
 
 CORRELATION RULES:
 - The Kubernetes tools report the DECLARED version (label, image tag, ConfigMap). Nothing links the deployed image to a
