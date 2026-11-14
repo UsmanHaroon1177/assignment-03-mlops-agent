@@ -1,0 +1,26 @@
+SCENARIO 2: model_selection
+QUESTION: Compare the last five training runs and recommend the best candidate based on F1 score. Is the highest F1 enough to call it production-ready?
+REQUEST ID: f36687563191
+MODEL: gemini-3.5-flash-lite
+
+Summary (model-written; only the facts below are checked against tool evidence):
+Compared the last five training runs in the 'breast-cancer-classifier' experiment. The top four runs achieve an F1 score of 0.966 using dataset version v2 and model type 'logreg', with the best run being 'dvc-repro-logreg' (run_id 996746c505db4826b12c7fa724c8f11e). The fifth run ('v2-gbm') achieved an F1 score of 0.9467 using model type 'gbm'. A high F1 score alone is not enough to call a model production-ready.
+
+Known facts (backed by tool results):
+- Run 996746c505db4826b12c7fa724c8f11e ('dvc-repro-logreg') achieved an F1 score of 0.966, accuracy 0.9561, precision 0.9467, and recall 0.9861 on dataset version v2.  [mlflow_find_best_run, mlflow_list_runs]
+- Runs d57b652a547f4d50a549f60f88f670b9, 1f2eab2d459146ac96ba0d777f4d33a2, and 857fdbd55166475ab9a2c05347969a03 also achieved an F1 score of 0.966 using dataset version v2.  [mlflow_find_best_run, mlflow_list_runs]
+- Run 4213f180d67947e982bc23baff86954c ('v2-gbm') achieved an F1 score of 0.9467 on dataset version v2.  [mlflow_find_best_run, mlflow_list_runs]
+- The highest F1 score comes from one hold-out split per run and alone does not make a model production-ready.  [mlflow_find_best_run]
+
+Uncertainties / unknown:
+- Top candidates differ by a very small margin in F1 score, which may be within noise.
+- The best run's provenance is missing, modified, or from uncommitted code.
+- The best run is not registered in the model registry.
+
+Recommended actions:
+- Verify model robustness across multiple splits or validation datasets before deployment.
+- Check model registration and review provenance details before promoting any candidate to production.
+
+-- tool evidence --
+mlflow_find_best_run                ok           396 ms
+mlflow_list_runs                    ok           60 ms
