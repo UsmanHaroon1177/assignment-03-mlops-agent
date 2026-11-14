@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import uuid
 from typing import Callable
@@ -67,7 +68,7 @@ class Orchestrator:
             for _ in range(self.max_steps):
                 action = self._ask(messages, rid)
                 if action.action == "final":
-                    final = action
+                    final = self._repair_evidence(action, messages, results, rid)
                     break
                 report = [self._handle_call(c, rid, results, seen, pending) for c in action.calls[:MAX_CALLS_PER_STEP]]
                 if len(action.calls) > MAX_CALLS_PER_STEP:
@@ -209,8 +210,9 @@ class Orchestrator:
         if final is not None:
             summary, recs = final.summary, list(final.recommended_actions)
             for f in final.known_facts:
-                if f.evidence and all(e in ok_tools for e in f.evidence):
-                    facts.append(f)
+                resolved = self._resolve_evidence(f.evidence)
+                if resolved and all(e in ok_tools for e in resolved):
+                    facts.append(f.model_copy(update={"evidence": resolved}))
                 else:
                     uncertainties.append(f"Unverified claim withheld (no successful tool evidence): {f.claim}")
             uncertainties += final.uncertainties
@@ -227,6 +229,32 @@ class Orchestrator:
         return AgentResponse(request_id=rid, answer=answer, summary=summary, known_facts=facts,
                              uncertainties=uncertainties, recommended_actions=recs, tool_results=results,
                              pending_actions=pending, llm_error=llm_error)
+
+    def _repair_evidence(self, action: LLMAction, messages: list[dict[str, str]],
+                         results: list[ToolResult], rid: str) -> LLMAction:
+        """One repair turn when facts cite no tool. Never guesses citations itself."""
+        if not any(not f.evidence for f in action.known_facts):
+            return action
+        used = sorted({r.tool for r in results if r.status == "ok"})
+        _event("agent_evidence_repair", request_id=rid, facts_without_evidence=sum(not f.evidence for f in action.known_facts))
+        messages.append({"role": "user", "text": (
+            "Some known_facts have empty evidence. Resend the SAME final JSON, and for every fact set evidence to the "
+            f"exact tool names that support it, chosen only from: {used}. Move any fact you cannot support to uncertainties.")})
+        try:
+            retry = self._ask(messages, rid)
+        except LLMError:
+            return action
+        return retry if retry.action == "final" else action
+
+    def _resolve_evidence(self, evidence: list[str]) -> list[str]:
+        """Map cited strings to real tool names; unknown citations stay as-is so they fail the gate."""
+        out: list[str] = []
+        for e in evidence:
+            names = [e] if e in self.tools else [n for n in self.tools if re.search(rf"(?<![A-Za-z0-9_]){re.escape(n)}(?![A-Za-z0-9_])", e)]
+            for n in names or [e]:
+                if n not in out:
+                    out.append(n)
+        return out
 
     @staticmethod
     def _render(summary, facts, uncertainties, recs, pending) -> str:
