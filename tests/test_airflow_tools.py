@@ -168,3 +168,18 @@ def test_server_error_is_unavailable(api):
 def test_unknown_run_is_rejected(api):
     res = run("airflow_get_run_status", dag_run_id="does-not-exist")
     assert res.status == "rejected"
+
+
+def test_failed_task_log_includes_exception_detail(api):
+    base = "/dags/training_pipeline"
+    rid = af.quote(RUN, safe="")
+    api["routes"][("GET", f"{base}/dagRuns/{rid}")] = Resp(200, {"dag_run_id": RUN, "state": "failed"})
+    api["routes"][("GET", f"{base}/dagRuns/{rid}/taskInstances")] = Resp(
+        200, tasks_payload({"train_model": "failed"}))
+    api["routes"][("GET", f"{base}/dagRuns/{rid}/taskInstances/train_model/logs/1")] = Resp(200, {"content": [
+        {"event": "Task failed with exception", "level": "error",
+         "error_detail": [{"exc_type": "MlflowException", "exc_value": "403 Invalid Host header", "frames": []}]}]})
+    res = run("airflow_get_failed_tasks", dag_run_id=RUN)
+    assert res.status == "ok"
+    tail = res.data["failed_tasks"][0]["log_tail"]
+    assert "Task failed with exception" in tail and "MlflowException" in tail and "Invalid Host header" in tail

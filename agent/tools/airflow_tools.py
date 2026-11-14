@@ -163,6 +163,22 @@ def _tasks(run_id: str) -> list[dict[str, Any]]:
     return out
 
 
+def _error_lines(detail: Any) -> list[str]:
+    """Render exception info (type: value) from an Airflow structured log entry; frames are skipped."""
+    if not detail:
+        return []
+    items = detail if isinstance(detail, list) else [detail]
+    out = []
+    for d in items:
+        if isinstance(d, dict):
+            kind, value = d.get("exc_type"), d.get("exc_value")
+            if kind or value:
+                out.append(f"EXCEPTION {kind or ''}: {str(value or '')[:1500]}")
+        else:
+            out.append(f"EXCEPTION {str(d)[:1500]}")
+    return out
+
+
 def _log_text(run_id: str, task_id: str, try_number: int) -> str:
     path = f"{_dag_path()}/dagRuns/{quote(run_id, safe='')}/taskInstances/{task_id}/logs/{int(try_number)}"
     data = _api("GET", path, params={"full_content": "true"})
@@ -170,7 +186,11 @@ def _log_text(run_id: str, task_id: str, try_number: int) -> str:
     if isinstance(content, list):
         lines = []
         for item in content:
-            lines.append(str(item.get("event", item)) if isinstance(item, dict) else str(item))
+            if not isinstance(item, dict):
+                lines.append(str(item))
+                continue
+            lines.append(str(item.get("event", item)))
+            lines.extend(_error_lines(item.get("error_detail")))
         content = "\n".join(lines)
     return str(content)[-LOG_TAIL_CHARS:]
 
