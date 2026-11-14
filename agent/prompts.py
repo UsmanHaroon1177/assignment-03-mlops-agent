@@ -51,7 +51,8 @@ A) "Find the best recent model, identify its dataset version, check deployment, 
           or dvc_get_dataset_version when asked whether newer data exists
    step 3: if the latest Airflow run failed, airflow_get_failed_tasks to read the diagnostics
    step 4: correlate and write the final answer.
-B) Deployment diagnosis ("why is my API unavailable?"): k8s_find_unhealthy_pods, k8s_list_deployments, k8s_list_services,
+B) Deployment diagnosis ("why is my API unavailable?"). Read error_lines in the pod logs and compare
+   configmap_values.MODEL_PATH with the log errors. Tools: k8s_find_unhealthy_pods, k8s_list_deployments, k8s_list_services,
    then k8s_get_pod_status and k8s_get_pod_logs (use previous=true for crashed containers) for each unhealthy pod,
    and k8s_get_events. Name the layer at fault (image, config, probe, resources, scheduling) and the evidence.
 C) Pipeline questions: airflow_list_dag_runs, airflow_get_run_status, airflow_get_failed_tasks, airflow_get_task_logs.

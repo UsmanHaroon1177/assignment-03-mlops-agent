@@ -276,13 +276,14 @@ def get_pod_status(pod_name: Any) -> dict[str, Any]:
     }
 
 
-def get_pod_logs(pod_name: Any, tail_lines: Any = 50, previous: Any = False) -> dict[str, Any]:
-    tail = _int_arg(tail_lines, 50, 1, MAX_TAIL_LINES, "tail_lines")
+def get_pod_logs(pod_name: Any, tail_lines: Any = 200, previous: Any = False) -> dict[str, Any]:
+    tail = _int_arg(tail_lines, 200, 1, MAX_TAIL_LINES, "tail_lines")
     prev = _bool_arg(previous, False, "previous")
     _scoped_pod(pod_name)
     text = _read_logs(pod_name, tail, prev)
+    errors = [ln for ln in text.splitlines() if " ERROR " in ln or "Traceback" in ln or "Error" in ln][-10:]
     return {"pod": pod_name, "previous_container": prev, "tail_lines": tail,
-            "truncated": len(text) > LOG_TAIL_CHARS, "log_tail": text[-LOG_TAIL_CHARS:]}
+            "truncated": len(text) > LOG_TAIL_CHARS, "error_lines": errors, "log_tail": text[-LOG_TAIL_CHARS:]}
 
 
 def list_services() -> dict[str, Any]:
@@ -352,6 +353,8 @@ def get_deployed_version() -> dict[str, Any]:
         "declared_versions": {"deployment_label": dep["version_label"], "image_tag": tag,
                               "configmap_app_version": cm_version},
         "rollout_complete": dep["rollout_complete"],
+        "configmap_values": {k: v for k, v in ((_read_configmap().get("data")) or {}).items()
+                             if k in ("APP_VERSION", "MODEL_PATH", "LOG_LEVEL")},
         "pods": [{"name": p["name"], "image": p["image"], "ready": p["ready"],
                   "image_id": (p["containers"][0]["image_id"] if p["containers"] else None)} for p in pods],
         "mismatches": mismatches,
